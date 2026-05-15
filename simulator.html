@@ -208,7 +208,7 @@ input:focus,select:focus{outline:none;border-color:#185FA5;}
 <div class="container">
 <a class="back" href="index.html">← 인덱스로 돌아가기</a>
 <h1>🧮 종합소득세 신고대리 가결산 시뮬레이터</h1>
-<p class="sub">2025년 귀속 종합소득세 · 간편(기준)/간편(단순)/기장 3가지 비교 <span style="color:#185FA5;font-weight:600;">v52</span> <span style="font-size:11px;color:#888;">(원천징수 명세 고객 표시 + 공란 축소)</span></p>
+<p class="sub">2025년 귀속 종합소득세 · 간편(기준)/간편(단순)/기장 3가지 비교 <span style="color:#185FA5;font-weight:600;">v53</span> <span style="font-size:11px;color:#888;">(고객 메모 미입력 시 기본 인사 문구)</span></p>
 
 <!-- 이름 입력 -->
 <!-- ========== 입력 영역 (PDF는 결과만 인쇄) ========== -->
@@ -595,7 +595,7 @@ input:focus,select:focus{outline:none;border-color:#185FA5;}
     ※ <strong>고객 전달용 PDF 1페이지 하단</strong>에 표시
   </div>
   <textarea id="customer-memo" rows="5" placeholder="예시)&#10;대표님 전년 대비 매출이 급감했습니다.&#10;대표님 경비가 너무 없으십니다. 가공경비 위험을 피하기 위해 평균소득률 기준 장부신고를 권장드립니다.&#10;국민건강보험료가 다음해 11월부터 약 ○○원 증가 예상됩니다." style="width:100%;padding:10px 12px;border:1px solid #d8d4c4;border-radius:6px;font-size:13px;line-height:1.7;font-family:inherit;resize:vertical;min-height:100px;" oninput="updateMemoPreview()"></textarea>
-  <div id="memo-preview-status" style="margin-top:6px;font-size:11px;color:#888;">메모 미입력 · 입력 시 인사말 사이에 자동 삽입됩니다</div>
+  <div id="memo-preview-status" style="margin-top:6px;font-size:11px;color:#888;">메모 미입력 · 기본 인사 문구가 표시됩니다 (입력 시 자동 교체)</div>
 </div>
 
 <!-- ★ v47: 제출 지출액 명세 입력 카드 -->
@@ -1911,8 +1911,12 @@ function updateMemoPreview(){
     }
     if(status) status.textContent = `✓ ${lines.length}개 항목 입력됨 · 고객 전달용 PDF에 인사말과 함께 표시됩니다`;
   } else {
-    bodyHtml = `<div style="color:#888;font-style:italic;">(이 영역에 입력한 내용이 표시됩니다)</div>`;
-    if(status) status.textContent = '메모 미입력 · 입력 시 인사말 사이에 자동 삽입됩니다';
+    // ★ v53: 입력 없을 때 기본 따뜻한 문구 표시 (실제로 보낼 만한 내용)
+    bodyHtml = `2025년 한 해 정말 수고 많으셨습니다.<br>
+    모든 일이 순조롭지 않을 때도 있었겠지만, 묵묵히 견뎌오신 대표님을 응원합니다.<br>
+    앞으로의 한 해는 <strong>즐거운 일과 좋은 소식</strong>만 가득하시기를 바랍니다.<br>
+    저희 원제우세무사 사무실도 변함없이 옆에서 든든하게 함께하겠습니다.`;
+    if(status) status.textContent = '메모 미입력 · 기본 인사 문구가 표시됩니다 (입력 시 자동 교체)';
   }
   
   // 인사말 + 본문 + 마무리 조합
@@ -3909,15 +3913,18 @@ function calc(){
   const r4 = hasCurExp ? calcAll(i4, {noBookPenalty: false, noFilePenalty: false, totalRev: totalRev}) : null;
 
   // ★ 총 납부세액 기준으로 최저 판단 — v35 지방소득세 독립 계산 적용 (지방세법 §92, §103의3)
-  // 공식: 국세 = 결정세액 - 원천징수 - 중간예납 - 근로소득결정세액
-  //       지방세 = 결정세액×10% - 원천징수×10% - 근로소득결정세액×10% (중간예납은 국세에만)
+  // ★ 총 납부세액 기준으로 최저 판단 — v35 지방소득세 독립 계산 적용 (지방세법 §92, §103의3)
+  // 공식: 국세 = 결정세액 - 원천징수 - 중간예납 - 근로소득결정세액 - 연금결정세액
+  //       지방세 = 결정세액×10% - 원천징수×10% - 근로소득결정세액×10% - 연금결정세액×10% (중간예납은 국세에만)
+  //       v52.1: 연금 결정세액(pensionTax) 누락 수정 — 소법 §143의4⑤ 기납부세액 환급 대상
   // ★ 단순경비율 사용 불가 시 r2는 비교에서 제외
   const calcTotalPay = (r) => {
-    const incPay = r.det - r.wh - r.pp - r.workTax;
+    const incPay = r.det - r.wh - r.pp - r.workTax - r.pensionTax;
     const locDet = Math.round(r.det * 0.1);
     const locWh = Math.round(r.wh * 0.1);
     const locWorkTax = Math.round(r.workTax * 0.1);
-    const locPay = locDet - locWh - locWorkTax;
+    const locPensionTax = Math.round(r.pensionTax * 0.1);
+    const locPay = locDet - locWh - locWorkTax - locPensionTax;
     return incPay + locPay;
   };
   const totalPay1 = calcTotalPay(r1);
@@ -4007,18 +4014,20 @@ function calc(){
     const specialDeductRow = d.r.specialDeduct>0 ? `<div class="cr" style="background:#E6F1FB;margin:0 -4px;padding:4px 4px;"><span class="cm" style="color:#0C447C;font-size:11px;">└ 특별공제 (${specialDeductDesc.join(', ')})</span><span class="crd">△${F(d.r.specialDeduct)}원</span></div>` : '';
     // ★ 자녀세액공제 별도 표시
     const childCrRow = d.r.childTaxCredit>0 ? `<div class="cr" style="background:#EAF3DE;margin:0 -4px;padding:4px 4px;"><span class="cm" style="color:#27500A;font-size:11px;">└ 자녀세액공제</span><span class="crd">△${F(d.r.childTaxCredit)}원</span></div>` : '';
-    // ★ 소득세분 납부(환급) = 결정세액 - 기납부 원천징수 - 중간예납 - 근로소득 결정세액
-    //   (근로소득 결정세액은 이미 원천징수로 납부된 것이므로 차감 — 소득세법 §76)
-    const incomeTaxPay = d.r.det - d.r.wh - d.r.pp - d.r.workTax;
+    // ★ 소득세분 납부(환급) = 결정세액 - 기납부 원천징수 - 중간예납 - 근로소득 결정세액 - 연금 결정세액
+    //   (근로소득·연금 결정세액은 이미 원천징수로 납부된 것이므로 차감 — 소득세법 §76, §143의4⑤)
+    //   v52.1: 연금 원천징수세액(pensionTax) 누락 수정
+    const incomeTaxPay = d.r.det - d.r.wh - d.r.pp - d.r.workTax - d.r.pensionTax;
     // ★ v35: 지방소득세 독립 계산 (지방세법 §92, §103의3)
     //   - 지방소득세 = 소득세 결정세액 × 10%
-    //   - 차감: 원천징수 지방세분 + 근로소득 결정세액 × 10%
+    //   - 차감: 원천징수 지방세분 + 근로소득 결정세액 × 10% + 연금 결정세액 × 10%
     //   - 중간예납은 국세에만 존재 → 지방세 계산에서 제외
     //   원천징수 시 소득세의 10%만큼 지방세도 이미 원천징수되었음
     const localDet = Math.round(d.r.det * 0.1);                              // 지방소득세 결정세액
     const localWh = Math.round(d.r.wh * 0.1);                                // 원천징수 지방세 (소득세 원천징수의 10%)
     const localWorkTax = Math.round(d.r.workTax * 0.1);                      // 근로소득 결정세액에 대한 지방세 (이미 원천징수)
-    const localPay = localDet - localWh - localWorkTax;                      // 납부할 지방소득세
+    const localPensionTax = Math.round(d.r.pensionTax * 0.1);                // 연금 결정세액에 대한 지방세 (이미 원천징수) — v52.1
+    const localPay = localDet - localWh - localWorkTax - localPensionTax;    // 납부할 지방소득세
     // 총 납부(환급) = 소득세분 + 지방소득세
     const totalPay = incomeTaxPay + localPay;
     // ★ v29: 기장 신고대리 카드에만 — 현재 확인 지출액 / 추가 필요 지출액 표시

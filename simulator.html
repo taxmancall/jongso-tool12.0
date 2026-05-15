@@ -208,7 +208,7 @@ input:focus,select:focus{outline:none;border-color:#185FA5;}
 <div class="container">
 <a class="back" href="index.html">← 인덱스로 돌아가기</a>
 <h1>🧮 종합소득세 신고대리 가결산 시뮬레이터</h1>
-<p class="sub">2025년 귀속 종합소득세 · 간편(기준)/간편(단순)/기장 3가지 비교 <span style="color:#185FA5;font-weight:600;">v53</span> <span style="font-size:11px;color:#888;">(고객 메모 미입력 시 기본 인사 문구)</span></p>
+<p class="sub">2025년 귀속 종합소득세 · 간편(기준)/간편(단순)/기장 3가지 비교 <span style="color:#185FA5;font-weight:600;">v54</span> <span style="font-size:11px;color:#888;">(장부 입력 — 소득률/소득금액 2가지 모드)</span></p>
 
 <!-- 이름 입력 -->
 <!-- ========== 입력 영역 (PDF는 결과만 인쇄) ========== -->
@@ -812,19 +812,55 @@ input:focus,select:focus{outline:none;border-color:#185FA5;}
 <!-- 장부 소득률 -->
 <div class="card">
   <div class="card-title">📒 장부신고 소득률 설정</div>
-  <div style="display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap;">
-    <span style="font-size:12px;color:#888;min-width:50px;">소득률</span>
-    <input type="range" id="rsl" min="0.01" max="100" value="15" step="0.01" 
-           oninput="syncRateFromSlider()" 
-           style="flex:1;min-width:180px;accent-color:#185FA5;">
-    <div style="display:flex;align-items:center;gap:4px;background:#F0F7FF;padding:6px 10px;border:2px solid #185FA5;border-radius:8px;">
-      <input type="number" id="rsl-num" min="0.01" max="100" step="0.01" value="15" 
-             oninput="syncRateFromNumber()" 
-             style="width:70px;text-align:right;font-weight:700;font-size:15px;color:#185FA5;border:none;background:transparent;outline:none;padding:0;font-family:inherit;">
-      <span style="font-size:14px;color:#185FA5;font-weight:700;">%</span>
-    </div>
+  
+  <!-- ★ v54: 입력 모드 토글 (소득률 % vs 소득금액 직접) -->
+  <div style="display:flex;gap:6px;margin-bottom:10px;">
+    <label style="flex:1;cursor:pointer;">
+      <input type="radio" name="book-input-mode" value="rate" checked onchange="toggleBookInputMode()" style="display:none;">
+      <div class="book-mode-btn" data-mode="rate" style="padding:8px 12px;text-align:center;border:2px solid #185FA5;background:#185FA5;color:#FFF;border-radius:8px;font-size:12px;font-weight:600;transition:all 0.2s;">
+        ① 소득률(%) 설정
+      </div>
+    </label>
+    <label style="flex:1;cursor:pointer;">
+      <input type="radio" name="book-input-mode" value="amount" onchange="toggleBookInputMode()" style="display:none;">
+      <div class="book-mode-btn" data-mode="amount" style="padding:8px 12px;text-align:center;border:2px solid #d8d4c4;background:#FFF;color:#888;border-radius:8px;font-size:12px;font-weight:600;transition:all 0.2s;">
+        ② 소득금액 직접 입력
+      </div>
+    </label>
   </div>
-  <p style="font-size:11px;color:#888;margin-top:8px;">기장 신고대리 시 소득금액 = 수입금액 × 소득률 <span style="color:#185FA5;font-weight:600;">· 입력박스에 직접 타이핑 가능 (예: 10.25%)</span></p>
+  
+  <!-- 모드 ①: 소득률 입력 -->
+  <div id="book-mode-rate" style="display:block;">
+    <div style="display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap;">
+      <span style="font-size:12px;color:#888;min-width:50px;">소득률</span>
+      <input type="range" id="rsl" min="0.01" max="100" value="15" step="0.01" 
+             oninput="syncRateFromSlider()" 
+             style="flex:1;min-width:180px;accent-color:#185FA5;">
+      <div style="display:flex;align-items:center;gap:4px;background:#F0F7FF;padding:6px 10px;border:2px solid #185FA5;border-radius:8px;">
+        <input type="number" id="rsl-num" min="0.01" max="100" step="0.01" value="15" 
+               oninput="syncRateFromNumber()" 
+               style="width:70px;text-align:right;font-weight:700;font-size:15px;color:#185FA5;border:none;background:transparent;outline:none;padding:0;font-family:inherit;">
+        <span style="font-size:14px;color:#185FA5;font-weight:700;">%</span>
+      </div>
+    </div>
+    <p style="font-size:11px;color:#888;margin-top:8px;">소득금액 = 수입금액 × 소득률 <span style="color:#185FA5;font-weight:600;">· 입력박스에 직접 타이핑 가능 (예: 10.25%)</span></p>
+    <div id="rate-preview" style="margin-top:6px;font-size:11px;color:#666;"></div>
+  </div>
+  
+  <!-- 모드 ②: 소득금액 직접 입력 -->
+  <div id="book-mode-amount" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap;">
+      <span style="font-size:12px;color:#888;min-width:60px;">소득금액</span>
+      <div style="flex:1;min-width:180px;display:flex;align-items:center;gap:4px;background:#F0F7FF;padding:6px 10px;border:2px solid #185FA5;border-radius:8px;">
+        <input type="number" id="book-amount" min="0" placeholder="0" 
+               oninput="syncFromAmount()" 
+               style="flex:1;text-align:right;font-weight:700;font-size:15px;color:#185FA5;border:none;background:transparent;outline:none;padding:0;font-family:inherit;">
+        <span style="font-size:14px;color:#185FA5;font-weight:700;">원</span>
+      </div>
+    </div>
+    <p style="font-size:11px;color:#888;margin-top:8px;">소득금액을 직접 입력하면 <strong>소득률 자동 역산</strong> (수입금액 ÷ 소득금액 × 100)</p>
+    <div id="amount-preview" style="margin-top:6px;font-size:11px;color:#666;"></div>
+  </div>
 
   <!-- ★ v29 신규: 현재 확인 지출액 입력 -->
   <div style="margin-top:14px;padding-top:14px;border-top:1px dashed #e8e6df;">
@@ -1604,6 +1640,9 @@ function updateTotalRev(){
   updateAvgRateDisplay();
   // ★ v34: 각 행의 sel-rate 표시도 갱신 (수입금액 변경 시 bucket 재계산)
   refreshAllSelRates();
+  // ★ v54: 장부 입력 모드 미리보기 갱신
+  const mode = document.querySelector('input[name="book-input-mode"]:checked')?.value || 'rate';
+  if(typeof updateBookPreview === 'function') updateBookPreview(mode);
 }
 
 // ★ v32: 수입금액이 가장 높은 업종의 평균소득률을 입력 영역에 표시
@@ -1677,6 +1716,7 @@ function syncRateFromSlider(){
   const num = document.getElementById('rsl-num');
   if(!sl || !num) return;
   num.value = parseFloat(sl.value).toFixed(2);
+  updateBookPreview('rate');
 }
 
 function syncRateFromNumber(){
@@ -1688,6 +1728,93 @@ function syncRateFromNumber(){
   if(v < 0.01) v = 0.01;
   if(v > 100) v = 100;
   sl.value = v;
+  updateBookPreview('rate');
+}
+
+// ★ v54: 소득금액 직접 입력 → 소득률 자동 역산
+function syncFromAmount(){
+  const amtEl = document.getElementById('book-amount');
+  if(!amtEl) return;
+  const amt = N(amtEl.value);
+  // 총 수입금액
+  const totalRev = [...document.querySelectorAll('.inc-amt')].reduce((s, i) => s + N(i.value), 0);
+  if(totalRev <= 0){
+    updateBookPreview('amount');
+    return;
+  }
+  // 소득률 역산 = 소득금액 / 수입금액 × 100
+  let rate = (amt / totalRev) * 100;
+  if(rate < 0.01) rate = 0.01;
+  if(rate > 100) rate = 100;
+  // 슬라이더/입력박스 동기화 (calc()에서 rsl 값을 읽으므로)
+  const sl = document.getElementById('rsl');
+  const num = document.getElementById('rsl-num');
+  if(sl) sl.value = rate;
+  if(num) num.value = rate.toFixed(2);
+  updateBookPreview('amount');
+}
+
+// ★ v54: 입력 모드 토글 (소득률 % vs 소득금액)
+function toggleBookInputMode(){
+  const mode = document.querySelector('input[name="book-input-mode"]:checked')?.value || 'rate';
+  const rateBox = document.getElementById('book-mode-rate');
+  const amtBox = document.getElementById('book-mode-amount');
+  if(rateBox) rateBox.style.display = (mode === 'rate') ? 'block' : 'none';
+  if(amtBox) amtBox.style.display = (mode === 'amount') ? 'block' : 'none';
+  
+  // 버튼 스타일 토글
+  document.querySelectorAll('.book-mode-btn').forEach(btn => {
+    const btnMode = btn.dataset.mode;
+    if(btnMode === mode){
+      btn.style.cssText = 'padding:8px 12px;text-align:center;border:2px solid #185FA5;background:#185FA5;color:#FFF;border-radius:8px;font-size:12px;font-weight:600;transition:all 0.2s;';
+    } else {
+      btn.style.cssText = 'padding:8px 12px;text-align:center;border:2px solid #d8d4c4;background:#FFF;color:#888;border-radius:8px;font-size:12px;font-weight:600;transition:all 0.2s;';
+    }
+  });
+  
+  // 모드 전환 시 양방향 값 동기화
+  if(mode === 'amount'){
+    // 소득률 → 소득금액 자동 채움
+    const totalRev = [...document.querySelectorAll('.inc-amt')].reduce((s, i) => s + N(i.value), 0);
+    const rate = N(document.getElementById('rsl')?.value) / 100;
+    const amt = Math.round(totalRev * rate);
+    const amtEl = document.getElementById('book-amount');
+    if(amtEl && totalRev > 0) amtEl.value = amt;
+  } else {
+    // amount → rate 모드 전환 시 syncFromAmount 실행 (반대 방향)
+    syncFromAmount();
+  }
+  updateBookPreview(mode);
+}
+
+// ★ v54: 모드별 미리보기 (수입금액·소득률·소득금액 관계 표시)
+function updateBookPreview(mode){
+  const totalRev = [...document.querySelectorAll('.inc-amt')].reduce((s, i) => s + N(i.value), 0);
+  const rate = N(document.getElementById('rsl')?.value);
+  const amt = Math.round(totalRev * rate / 100);
+  
+  if(mode === 'rate'){
+    const previewEl = document.getElementById('rate-preview');
+    if(!previewEl) return;
+    if(totalRev > 0){
+      previewEl.innerHTML = `→ 수입금액 <strong>${F(totalRev)}원</strong> × ${rate.toFixed(2)}% = 소득금액 <strong style="color:#185FA5;">${F(amt)}원</strong>`;
+    } else {
+      previewEl.textContent = '수입금액 입력 시 소득금액이 자동 계산됩니다';
+    }
+  } else {
+    const previewEl = document.getElementById('amount-preview');
+    if(!previewEl) return;
+    const amtEl = document.getElementById('book-amount');
+    const inputAmt = N(amtEl?.value);
+    if(totalRev > 0 && inputAmt > 0){
+      const calcRate = (inputAmt / totalRev) * 100;
+      previewEl.innerHTML = `→ 수입금액 <strong>${F(totalRev)}원</strong> 대비 <strong style="color:#185FA5;">소득률 ${calcRate.toFixed(2)}%</strong> (자동 역산)`;
+    } else if(totalRev <= 0){
+      previewEl.innerHTML = `<span style="color:#A32D2D;">⚠ 수입금액을 먼저 입력하세요 (소득률 역산 불가)</span>`;
+    } else {
+      previewEl.textContent = '소득금액을 입력하면 소득률이 자동 역산됩니다';
+    }
+  }
 }
 
 // ===== 근로소득 (다중 근무지) =====
@@ -4545,6 +4672,8 @@ document.addEventListener('DOMContentLoaded', function(){
   }
   // ★ v46: 페이지 로드 시 인사말 미리보기 초기화
   if(typeof updateMemoPreview === 'function') updateMemoPreview();
+  // ★ v54: 장부 입력 모드 초기 미리보기
+  if(typeof updateBookPreview === 'function') updateBookPreview('rate');
   // ★ v47: 제출 지출액 명세 — 초기 행 1개 자동 생성
   if(typeof addExpenseRow === 'function' && document.querySelectorAll('.expense-row').length === 0){
     addExpenseRow();

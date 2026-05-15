@@ -194,18 +194,19 @@ input:focus,select:focus{outline:none;border-color:#185FA5;}
   /* 전체 모드에서 그룹별 print-section-title은 여백을 줄여 페이지 채움률 향상 */
   body[data-print-mode="all"] .print-section-title{padding:4px 0 3px 0!important;margin-bottom:4px!important;font-size:14px!important;}
 
-  /* ★ v55: 안내문 첨부 — 첨부 페이지가 실제로 있을 때만 새 페이지로 시작 */
+  /* ★ v57: 안내문 첨부 — 섹션 자체는 자연 흐름으로 이어붙이고, 헤더는 직전 페이지 하단에 흡수
+     첫 첨부 이미지부터만 새 페이지 시작 → 첨부 직전 페이지의 빈공간 제거 */
   body[data-print-mode="all"] .pdf-section[data-pdf-group="5"]:has(.attachment-page),
-  body[data-print-mode="4"] .pdf-section[data-pdf-group="5"]:has(.attachment-page){display:block!important;page-break-before:always;}
-  /* ★ v55: 첨부 섹션 헤더는 첫 첨부페이지와 같은 페이지에 묶이게 */
+  body[data-print-mode="4"] .pdf-section[data-pdf-group="5"]:has(.attachment-page){display:block!important;}
+  /* 첨부 헤더(소제목·고객정보)는 직전 본문에 자연스럽게 이어지도록 압축 + 다음 요소와 묶음 */
   #pdf-section-attachment > .print-section-title,
   #pdf-section-attachment > .print-client-info{page-break-after:avoid!important;break-after:avoid!important;margin-bottom:4px!important;padding:4px 10px!important;}
   /* 안내문 이미지 페이지 사이 분리 */
   .attachment-page{page-break-after:always;page-break-inside:avoid;}
   .attachment-page:last-child{page-break-after:auto;}
-  /* ★ v55: 첫 첨부 이미지는 직전 헤더와 한 페이지로 묶기 위해 page-break-before 금지 */
-  #attachment-images > .attachment-page:first-child{page-break-before:avoid!important;break-before:avoid!important;}
-  /* ★ v55: 첨부 이미지 자체는 페이지 폭에 맞추고 여백 최소화 */
+  /* ★ v57: 파일명 헤더는 첨부 시작 지점 — 새 페이지에서 시작하고 첫 이미지와 묶음 */
+  .attachment-file-header{page-break-before:always!important;break-before:page!important;page-break-after:avoid!important;break-after:avoid!important;}
+  /* 첨부 이미지는 페이지 폭에 맞추고 여백 최소화 */
   #attachment-images{margin-top:0!important;}
   .attachment-page img{display:block;max-width:100%;height:auto;margin:0;}
 
@@ -237,7 +238,7 @@ input:focus,select:focus{outline:none;border-color:#185FA5;}
 <div class="container">
 <a class="back" href="index.html">← 인덱스로 돌아가기</a>
 <h1>🧮 종합소득세 신고대리 가결산 시뮬레이터</h1>
-<p class="sub">2025년 귀속 종합소득세 · 간편(기준)/간편(단순)/기장 3가지 비교 <span style="color:#185FA5;font-weight:600;">v56</span> <span style="font-size:11px;color:#888;">(PDF 첫·끝 빈페이지 제거)</span></p>
+<p class="sub">2025년 귀속 종합소득세 · 간편(기준)/간편(단순)/기장 3가지 비교 <span style="color:#185FA5;font-weight:600;">v57</span> <span style="font-size:11px;color:#888;">(첨부 직전 빈공간 제거)</span></p>
 
 <!-- 이름 입력 -->
 <!-- ========== 입력 영역 (PDF는 결과만 인쇄) ========== -->
@@ -2666,10 +2667,10 @@ async function renderAttachmentPages(pdf, filename){
   if(!wrap || !section) return;
   
   // 같은 파일이 여러 개 업로드되어도 누적되도록 페이지를 append (init은 첨부 토글로 처리)
-  // 파일 구분자 추가
+  // 파일 구분자 추가 (★ v57: attachment-page 클래스 제거 — page-break-after:always 영향 받지 않도록)
   const fileHeader = document.createElement('div');
-  fileHeader.className = 'attachment-page';
-  fileHeader.style.cssText = 'padding:6px 10px;background:#F0F7FF;border-left:3px solid #185FA5;font-size:11px;color:#185FA5;margin-bottom:6px;page-break-after:avoid;';
+  fileHeader.className = 'attachment-file-header';
+  fileHeader.style.cssText = 'padding:6px 10px;background:#F0F7FF;border-left:3px solid #185FA5;font-size:11px;color:#185FA5;margin-bottom:6px;page-break-after:avoid;break-after:avoid;page-break-inside:avoid;';
   fileHeader.textContent = '📎 ' + (filename || '안내문');
   wrap.appendChild(fileHeader);
   

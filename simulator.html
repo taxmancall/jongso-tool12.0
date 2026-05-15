@@ -98,16 +98,19 @@ input:focus,select:focus{outline:none;border-color:#185FA5;}
 .print-client-info{display:none;}
 
 @media print{
-  /* ★ v48: PDF 페이지 여백 축소 */
+  /* ★ v55: PDF 페이지 여백 축소 + 공란 최소화 */
   @page {
-    margin: 8mm 10mm;
+    margin: 6mm 8mm;
     size: A4;
   }
   
-  a.back,.tab-row,.card-title,.upload-zone,.parse-status,.parsed-result,.calc-btn,.pdf-btn,.pdf-btn-group,.add-row-btn,.rb,.slider-wrap,.work-income-section,.search-wrap,.dropdown,.selected-industry,#upload-section{display:none!important;}
+  a.back,h1,p.sub,.name-bar,.tab-row,.card-title,.upload-zone,.parse-status,.parsed-result,.calc-btn,.pdf-btn,.pdf-btn-group,.add-row-btn,.rb,.slider-wrap,.work-income-section,.search-wrap,.dropdown,.selected-industry,#upload-section{display:none!important;}
   body{background:#fff;margin:0;padding:0;}
   .container{padding:0;max-width:100%;margin:0;}
-  .card{border:1px solid #ccc;box-shadow:none;break-inside:avoid;margin-bottom:6px!important;padding:6px 8px!important;}
+  /* ★ v55: 카드 자체는 페이지 끊김 허용 (큰 카드의 빈공간 방지) */
+  .card{border:1px solid #ccc;box-shadow:none;break-inside:auto;page-break-inside:auto;margin-bottom:6px!important;padding:6px 8px!important;}
+  /* ★ v55: 카드 타이틀은 다음 줄과 떨어지지 않게 */
+  .card-title{break-after:avoid;page-break-after:avoid;}
   .compare-grid{grid-template-columns:repeat(3,1fr)!important;gap:6px!important;}
   .compare-grid-customer{grid-template-columns:repeat(4,1fr)!important;gap:6px!important;}
   .cc.best{border:2px solid #185FA5;}
@@ -183,20 +186,46 @@ input:focus,select:focus{outline:none;border-color:#185FA5;}
 
   /* 전체 모드(all): 입력 영역 숨김, 결과만 인쇄 */
   body[data-print-mode="all"] .input-section{display:none!important;}
+  /* ★ v55: 전체 모드에서 반복되는 고객정보 박스/소제목은 첫 그룹(4)만 노출하여 페이지 채움률 향상 */
+  body[data-print-mode="all"] .pdf-section[data-pdf-group="1"] > .print-client-info,
+  body[data-print-mode="all"] .pdf-section[data-pdf-group="2"] > .print-client-info,
+  body[data-print-mode="all"] .pdf-section[data-pdf-group="3"] > .print-client-info,
+  body[data-print-mode="all"] .pdf-section[data-pdf-group="5"] > .print-client-info{display:none!important;}
+  /* 전체 모드에서 그룹별 print-section-title은 여백을 줄여 페이지 채움률 향상 */
+  body[data-print-mode="all"] .print-section-title{padding:4px 0 3px 0!important;margin-bottom:4px!important;font-size:14px!important;}
 
-  /* ★ v50: 안내문 첨부는 mode all과 mode 4에서 항상 표시 (이미지 영역이 있을 때) */
-  body[data-print-mode="all"] .pdf-section[data-pdf-group="5"],
-  body[data-print-mode="4"] .pdf-section[data-pdf-group="5"]{display:block!important;page-break-before:always;}
+  /* ★ v55: 안내문 첨부 — 첨부 페이지가 실제로 있을 때만 새 페이지로 시작 */
+  body[data-print-mode="all"] .pdf-section[data-pdf-group="5"]:has(.attachment-page),
+  body[data-print-mode="4"] .pdf-section[data-pdf-group="5"]:has(.attachment-page){display:block!important;page-break-before:always;}
+  /* ★ v55: 첨부 섹션 헤더는 첫 첨부페이지와 같은 페이지에 묶이게 */
+  #pdf-section-attachment > .print-section-title,
+  #pdf-section-attachment > .print-client-info{page-break-after:avoid!important;break-after:avoid!important;margin-bottom:4px!important;padding:4px 10px!important;}
   /* 안내문 이미지 페이지 사이 분리 */
   .attachment-page{page-break-after:always;page-break-inside:avoid;}
   .attachment-page:last-child{page-break-after:auto;}
+  /* ★ v55: 첫 첨부 이미지는 직전 헤더와 한 페이지로 묶기 위해 page-break-before 금지 */
+  #attachment-images > .attachment-page:first-child{page-break-before:avoid!important;break-before:avoid!important;}
+  /* ★ v55: 첨부 이미지 자체는 페이지 폭에 맞추고 여백 최소화 */
+  #attachment-images{margin-top:0!important;}
+  .attachment-page img{display:block;max-width:100%;height:auto;margin:0;}
 
-  /* ★ v52: 카드 단위 페이지 분리 방지 (카드가 페이지 중간에 끊기지 않도록) */
-  .card{page-break-inside:avoid;break-inside:avoid;}
+  /* ★ v55: 작은 단위(비교 그리드/노티스/원천징수 표)는 끊김 방지 — 카드 자체는 끊김 허용 */
+  .compare-grid,.compare-grid-customer,.notice-grid,
+  #fee-body,#penalty-body{page-break-inside:avoid;break-inside:avoid;}
+  /* 비교 카드 한 장(.cc)은 절대 끊기지 않게 */
+  .cc{page-break-inside:avoid;break-inside:avoid;}
 
-  /* PDF 그룹별 페이지 분리 — 전체 모드만 명확히 분리 */
-  /* v52: 그룹4와 그룹2는 자연스럽게 이어지고, 그룹3은 분리, 그룹5는 분리 */
-  body[data-print-mode="all"] .pdf-section[data-pdf-group="3"]{page-break-before:always;}
+  /* ★ v55: 전체 모드(all) — 그룹3은 자연 흐름으로 이어붙임 (강제 새 페이지 제거) */
+  /* 기존 v52: body[data-print-mode="all"] .pdf-section[data-pdf-group="3"]{page-break-before:always;}
+     → 그룹3 직전 페이지에 빈공간 크게 남는 문제 해결을 위해 제거 */
+
+  /* ★ v55: 빈 인쇄용 메타정보 행 숨김 (생년월일 등 미입력 시 라벨만 남는 빈칸 제거) */
+  .print-client-info > div:has(span.label + span:empty){display:none!important;}
+  /* 본문이 비어있는 동적 카드는 통째로 숨김 (penalty / customer-* 박스 등) */
+  #penalty-card:has(#penalty-body:empty),
+  #customer-memo-display[style*="display:none"],
+  #customer-wh-display[style*="display:none"],
+  #customer-expense-display[style*="display:none"]{display:none!important;}
   
   /* ★ v38: 고객 전달용 PDF 인쇄 시에만 안내문 표시 */
   body[data-print-mode="4"] .print-only-note,
@@ -208,7 +237,7 @@ input:focus,select:focus{outline:none;border-color:#185FA5;}
 <div class="container">
 <a class="back" href="index.html">← 인덱스로 돌아가기</a>
 <h1>🧮 종합소득세 신고대리 가결산 시뮬레이터</h1>
-<p class="sub">2025년 귀속 종합소득세 · 간편(기준)/간편(단순)/기장 3가지 비교 <span style="color:#185FA5;font-weight:600;">v54</span> <span style="font-size:11px;color:#888;">(장부 입력 — 소득률/소득금액 2가지 모드)</span></p>
+<p class="sub">2025년 귀속 종합소득세 · 간편(기준)/간편(단순)/기장 3가지 비교 <span style="color:#185FA5;font-weight:600;">v56</span> <span style="font-size:11px;color:#888;">(PDF 첫·끝 빈페이지 제거)</span></p>
 
 <!-- 이름 입력 -->
 <!-- ========== 입력 영역 (PDF는 결과만 인쇄) ========== -->

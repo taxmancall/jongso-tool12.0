@@ -100,16 +100,16 @@ input:focus,select:focus{outline:none;border-color:#185FA5;}
 @media print{
   /* ★ v48: PDF 페이지 여백 축소 */
   @page {
-    margin: 10mm 12mm;
+    margin: 8mm 10mm;
     size: A4;
   }
   
   a.back,.tab-row,.card-title,.upload-zone,.parse-status,.parsed-result,.calc-btn,.pdf-btn,.pdf-btn-group,.add-row-btn,.rb,.slider-wrap,.work-income-section,.search-wrap,.dropdown,.selected-industry,#upload-section{display:none!important;}
   body{background:#fff;margin:0;padding:0;}
   .container{padding:0;max-width:100%;margin:0;}
-  .card{border:1px solid #ccc;box-shadow:none;break-inside:avoid;margin-bottom:8px!important;padding:8px 10px!important;}
-  .compare-grid{grid-template-columns:repeat(3,1fr)!important;}
-  .compare-grid-customer{grid-template-columns:repeat(4,1fr)!important;}
+  .card{border:1px solid #ccc;box-shadow:none;break-inside:avoid;margin-bottom:6px!important;padding:6px 8px!important;}
+  .compare-grid{grid-template-columns:repeat(3,1fr)!important;gap:6px!important;}
+  .compare-grid-customer{grid-template-columns:repeat(4,1fr)!important;gap:6px!important;}
   .cc.best{border:2px solid #185FA5;}
   .hidden{display:block!important;}
   #result{display:block!important;margin:0!important;padding:0!important;}
@@ -164,11 +164,13 @@ input:focus,select:focus{outline:none;border-color:#185FA5;}
   body[data-print-mode="4"] .pdf-section[data-pdf-group="3"],
   body[data-print-mode="4"] .pdf-section[data-pdf-group="5"]{display:none!important;}
 
-  /* ★ v40: 고객 전달용 인쇄 시 그룹2(수수료)는 포함, 페이지 구분 */
-  body[data-print-mode="4"] .pdf-section[data-pdf-group="2"]{page-break-before:always;}
+  /* ★ v40: 고객 전달용 인쇄 시 그룹2(수수료)는 포함 */
+  /* v52: 강제 페이지 분리 제거 → 자연스럽게 이어지도록 */
+  /* body[data-print-mode="4"] .pdf-section[data-pdf-group="2"]{page-break-before:always;} */
 
   /* ★ v39: 고객 전달용 인쇄 시, 그룹3 안의 customer-include 카드는 표시 */
-  body[data-print-mode="4"] .pdf-section[data-pdf-group="3"]{display:block!important;page-break-before:always;}
+  /* v52: 강제 페이지 분리 제거 */
+  body[data-print-mode="4"] .pdf-section[data-pdf-group="3"]{display:block!important;}
   body[data-print-mode="4"] .pdf-section[data-pdf-group="3"] > .card:not(.customer-include),
   body[data-print-mode="4"] .pdf-section[data-pdf-group="3"] > .print-section-title,
   body[data-print-mode="4"] .pdf-section[data-pdf-group="3"] > .print-client-info{display:none!important;}
@@ -189,9 +191,12 @@ input:focus,select:focus{outline:none;border-color:#185FA5;}
   .attachment-page{page-break-after:always;page-break-inside:avoid;}
   .attachment-page:last-child{page-break-after:auto;}
 
-  /* PDF 그룹별 페이지 분리 — 전체 인쇄 시 그룹 사이에 페이지 나누기 */
-  body[data-print-mode="all"] .pdf-section{page-break-before:always;}
-  body[data-print-mode="all"] .pdf-section[data-pdf-group="4"]{page-break-before:auto;}  /* 첫 페이지: 그룹4(고객용) */
+  /* ★ v52: 카드 단위 페이지 분리 방지 (카드가 페이지 중간에 끊기지 않도록) */
+  .card{page-break-inside:avoid;break-inside:avoid;}
+
+  /* PDF 그룹별 페이지 분리 — 전체 모드만 명확히 분리 */
+  /* v52: 그룹4와 그룹2는 자연스럽게 이어지고, 그룹3은 분리, 그룹5는 분리 */
+  body[data-print-mode="all"] .pdf-section[data-pdf-group="3"]{page-break-before:always;}
   
   /* ★ v38: 고객 전달용 PDF 인쇄 시에만 안내문 표시 */
   body[data-print-mode="4"] .print-only-note,
@@ -203,7 +208,7 @@ input:focus,select:focus{outline:none;border-color:#185FA5;}
 <div class="container">
 <a class="back" href="index.html">← 인덱스로 돌아가기</a>
 <h1>🧮 종합소득세 신고대리 가결산 시뮬레이터</h1>
-<p class="sub">2025년 귀속 종합소득세 · 간편(기준)/간편(단순)/기장 3가지 비교 <span style="color:#185FA5;font-weight:600;">v50</span> <span style="font-size:11px;color:#888;">(원본 안내문 자동 첨부)</span></p>
+<p class="sub">2025년 귀속 종합소득세 · 간편(기준)/간편(단순)/기장 3가지 비교 <span style="color:#185FA5;font-weight:600;">v52</span> <span style="font-size:11px;color:#888;">(원천징수 명세 고객 표시 + 공란 축소)</span></p>
 
 <!-- 이름 입력 -->
 <!-- ========== 입력 영역 (PDF는 결과만 인쇄) ========== -->
@@ -274,6 +279,41 @@ input:focus,select:focus{outline:none;border-color:#185FA5;}
   </div>
   <!-- ★ v32: 직접 입력 시에도 평균소득률 표시 -->
   <div id="avg-income-rate-direct" style="display:none;margin-top:8px;padding:8px 10px;background:#F0F7FF;border-left:3px solid #185FA5;border-radius:4px;font-size:11px;line-height:1.7;"></div>
+</div>
+
+<!-- ★ v51: 원천징수영수증 엑셀 검증 카드 (매출 중복·누락 확인용) -->
+<div class="card" style="background:#FAFCFF;border:1px solid #4A90D9;">
+  <div class="card-title" style="color:#0C447C;">🔍 원천징수영수증 검증 <span style="font-size:11px;font-weight:400;color:#888;">— 거래처별 명세 합계 vs 안내문 수입금액 대조</span></div>
+  <div style="font-size:11px;color:#666;margin-bottom:8px;line-height:1.7;padding:8px 12px;background:#F0F7FF;border-radius:6px;">
+    ※ 거래처별 원천징수영수증 엑셀을 붙여넣어 <strong>총 지급금액·원천징수세액</strong>을 자동 합산<br>
+    ※ <strong>안내문 수입금액과 차이가 있으면 매출 중복·누락 가능성</strong> → 확인 필수<br>
+    ※ 본 카드는 <strong>검증용 (계산에는 반영 안 됨)</strong>
+  </div>
+  
+  <details>
+    <summary style="cursor:pointer;font-size:12px;font-weight:600;color:#0C447C;padding:6px 0;">📋 엑셀에서 복사한 원천징수 명세 붙여넣기 (클릭하여 열기)</summary>
+    <div style="margin-top:10px;">
+      <div style="font-size:11px;color:#666;margin-bottom:6px;line-height:1.6;">
+        엑셀에서 표 전체(헤더 제외 또는 포함) 복사 후 붙여넣기.<br>
+        <span style="color:#888;">컬럼 인식: 상호 / 사업자번호 / 귀속연도 / 업종구분 / 지급총액 / 세율 / 소득세 / 지방소득세 / 계</span>
+      </div>
+      <textarea id="wh-paste" rows="6" placeholder="예시 (엑셀 복사):&#10;쿠팡이츠서비스&#9;8968702133&#9;2025&#9;940918&#9;3,396,435&#9;3&#9;101,670&#9;9,960&#9;111,630&#10;주식회사 한들이앤씨&#9;5338802748&#9;2025&#9;940909&#9;540,000&#9;3&#9;16,200&#9;1,620&#9;17,820&#10;..." style="width:100%;padding:8px 10px;border:1px solid #d8d4c4;border-radius:4px;font-size:11px;font-family:'Courier New', monospace;resize:vertical;min-height:120px;"></textarea>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button onclick="parseWhExcel()" style="flex:1;padding:8px;background:#185FA5;color:#FFF;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;">
+          🔍 검증 (총액 합산)
+        </button>
+        <button onclick="clearWhResult()" style="padding:8px 14px;background:#FFF;border:1px solid #d8d4c4;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;color:#666;">
+          비우기
+        </button>
+      </div>
+    </div>
+  </details>
+
+  <!-- 결과 표시 -->
+  <div id="wh-result" style="display:none;margin-top:12px;padding:12px 14px;background:#FFF;border:1.5px solid #4A90D9;border-radius:8px;">
+    <div style="font-weight:700;color:#0C447C;margin-bottom:10px;font-size:13px;">📊 검증 결과</div>
+    <div id="wh-result-content"></div>
+  </div>
 </div>
 
 <!-- ★ v28.4 신규: 무기장가산세 면제 토글 (소법 §81의5②) -->
@@ -850,6 +890,14 @@ input:focus,select:focus{outline:none;border-color:#185FA5;}
           <span style="font-size:14px;">✉️</span> 고객 안내문
         </div>
         <div id="customer-memo-content" style="white-space:pre-wrap;"></div>
+      </div>
+      
+      <!-- ★ v52: 원천징수영수증 거래처별 명세 (고객 확인용) — 제출 지출액 위 -->
+      <div id="customer-wh-display" style="display:none;margin-top:16px;padding:14px 16px;background:#FAFCFF;border:1.5px solid #4A90D9;border-radius:8px;font-size:12px;line-height:1.7;color:#1a1a1a;">
+        <div style="font-weight:700;color:#0C447C;margin-bottom:10px;display:flex;align-items:center;gap:6px;border-bottom:1px solid #4A90D9;padding-bottom:6px;">
+          <span style="font-size:14px;">🔍</span> 원천징수영수증 거래처별 명세 — <span style="color:#A32D2D;">확인 부탁드립니다</span>
+        </div>
+        <div id="customer-wh-content"></div>
       </div>
       
       <!-- ★ v47: 제출 지출액 명세 (고객 제출 영수증·증빙 합산) -->
@@ -2520,6 +2568,281 @@ function updateAttachmentControl(){
     ctrl.innerHTML = '📎 안내문 미첨부 (안내문 PDF 업로드 시 자동 첨부)';
     ctrl.style.color = '#888';
   }
+}
+
+// ===== ★ v51: 원천징수영수증 엑셀 검증 (매출 중복·누락 대조) =====
+let _whParsedData = null;  // 파싱된 거래처 데이터 (고객용 카드에서 사용)
+
+function parseWhExcel(){
+  const ta = document.getElementById('wh-paste');
+  const result = document.getElementById('wh-result');
+  const content = document.getElementById('wh-result-content');
+  if(!ta || !result || !content) return;
+  
+  const raw = (ta.value || '').trim();
+  if(!raw){
+    alert('붙여넣을 내용을 입력해주세요');
+    return;
+  }
+  
+  const lines = raw.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+  const rows = [];
+  let totalPay = 0;       // 지급총액 합계
+  let totalIncTax = 0;    // 소득세 합계
+  let totalLocTax = 0;    // 지방소득세 합계
+  let totalAllTax = 0;    // 총 원천징수세액 (계)
+  
+  lines.forEach(line => {
+    // 탭/다중공백으로 분리
+    let parts = line.split('\t');
+    if(parts.length < 5) parts = line.split(/\s{2,}/);
+    if(parts.length < 5) return; // 최소 5개 컬럼 필요
+    
+    parts = parts.map(p => p.trim());
+    
+    // 헤더 행 스킵 (첫 컬럼이 "상호" 같은 문자거나, 숫자 포함 없으면)
+    const allNumeric = parts.slice(2).some(p => /\d/.test(p));
+    if(!allNumeric) return;
+    
+    // 합계 행 스킵 (첫 컬럼이 "합계"면)
+    if(parts[0] === '합계' || parts[0].includes('합계')){
+      // 합계 행도 표시는 하되 합산 X
+      return;
+    }
+    
+    // 숫자 정제 헬퍼
+    const num = s => parseFloat(String(s).replace(/[,\s원]/g, '')) || 0;
+    
+    // 컬럼 위치 추정:
+    // 9컬럼: 상호 | 사업자번호 | 귀속연도 | 업종구분 | 지급총액 | 세율 | 소득세 | 지방세 | 계
+    // 8컬럼: 상호 | 사업자번호 | 귀속연도 | 업종구분 | 지급총액 | 소득세 | 지방세 | 계
+    // 7컬럼: 상호 | 사업자번호 | 귀속연도 | 지급총액 | 소득세 | 지방세 | 계
+    
+    let pay, incTax, locTax, allTax, taxRate;
+    if(parts.length >= 9){
+      pay = num(parts[4]);
+      taxRate = parts[5];
+      incTax = num(parts[6]);
+      locTax = num(parts[7]);
+      allTax = num(parts[8]);
+    } else if(parts.length === 8){
+      pay = num(parts[4]);
+      incTax = num(parts[5]);
+      locTax = num(parts[6]);
+      allTax = num(parts[7]);
+    } else if(parts.length === 7){
+      pay = num(parts[3]);
+      incTax = num(parts[4]);
+      locTax = num(parts[5]);
+      allTax = num(parts[6]);
+    } else {
+      return; // 컬럼 수 매칭 실패
+    }
+    
+    // 유효성: 지급총액 > 0
+    if(pay <= 0) return;
+    
+    rows.push({
+      name: parts[0],
+      bizNo: parts[1] || '',
+      year: parts[2] || '',
+      bizCode: parts.length >= 9 ? parts[3] : '',
+      pay, incTax, locTax, allTax,
+      taxRate
+    });
+    
+    totalPay += pay;
+    totalIncTax += incTax;
+    totalLocTax += locTax;
+    totalAllTax += allTax;
+  });
+  
+  if(rows.length === 0){
+    alert('파싱 가능한 행이 없습니다.\n\n엑셀에서 표(헤더+데이터)를 선택해서 복사한 후 붙여넣으세요.\n인식 가능한 컬럼: 상호 / 사업자번호 / 귀속연도 / [업종구분] / 지급총액 / [세율] / 소득세 / 지방소득세 / 계');
+    return;
+  }
+  
+  // 안내문 수입금액과 비교 (총 수입금액 = 모든 .inc-amt 합계)
+  const declaredRev = [...document.querySelectorAll('.inc-amt')].reduce((s, i) => s + N(i.value), 0);
+  const declaredWh = N(document.getElementById('pp')?.value); // 안내문 원천징수세액 (앞 카드: 사업소득 원천징수세액)
+  
+  // 차액 계산
+  const diff = declaredRev - totalPay;
+  const diffWh = declaredWh - totalAllTax;
+  const diffAbs = Math.abs(diff);
+  const matchPct = totalPay > 0 ? ((1 - diffAbs / totalPay) * 100) : 0;
+  
+  // 결과 HTML 생성
+  let html = '';
+  
+  // 1) 합계 비교 박스
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">`;
+  
+  // 엑셀 합계
+  html += `<div style="padding:10px 12px;background:#F0F7FF;border:1px solid #4A90D9;border-radius:6px;">
+    <div style="font-size:11px;color:#0C447C;font-weight:600;margin-bottom:4px;">📊 엑셀 합계 (${rows.length}건)</div>
+    <div style="font-size:14px;font-weight:700;color:#185FA5;">지급총액: ${F(totalPay)}원</div>
+    <div style="font-size:11px;color:#666;margin-top:4px;">
+      원천징수세액: <strong>${F(totalAllTax)}원</strong><br>
+      <span style="color:#888;">(소득세 ${F(totalIncTax)} + 지방세 ${F(totalLocTax)})</span>
+    </div>
+  </div>`;
+  
+  // 안내문 입력값
+  html += `<div style="padding:10px 12px;background:#FEF6E5;border:1px solid #D4A53D;border-radius:6px;">
+    <div style="font-size:11px;color:#A06900;font-weight:600;margin-bottom:4px;">📄 안내문 입력값</div>
+    <div style="font-size:14px;font-weight:700;color:#A06900;">총 수입금액: ${F(declaredRev)}원</div>
+    <div style="font-size:11px;color:#666;margin-top:4px;">
+      사업소득 원천징수세액: <strong>${F(declaredWh)}원</strong><br>
+      <span style="color:#888;">(상단 카드의 "사업소득 원천징수세액" 필드)</span>
+    </div>
+  </div>`;
+  html += `</div>`;
+  
+  // 2) 차액 표시
+  if(declaredRev > 0){
+    const isMatch = diffAbs < 1000;  // 1천원 미만 차이는 매칭으로 간주
+    const isClose = !isMatch && diffAbs < totalPay * 0.05;  // 5% 미만 차이
+    const statusColor = isMatch ? '#3B6D11' : isClose ? '#A06900' : '#A32D2D';
+    const statusBg = isMatch ? '#EAF4E4' : isClose ? '#FEF6E5' : '#FCEBEB';
+    const statusIcon = isMatch ? '✅' : isClose ? '⚠️' : '❌';
+    const statusText = isMatch ? '일치' : isClose ? '근접 (5% 미만 차이)' : '불일치';
+    
+    html += `<div style="padding:12px 14px;background:${statusBg};border:1.5px solid ${statusColor};border-radius:6px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-size:13px;font-weight:700;color:${statusColor};">${statusIcon} 매출 검증: ${statusText}</div>
+        <div style="font-size:12px;color:${statusColor};">매칭률 ${matchPct.toFixed(2)}%</div>
+      </div>
+      <div style="font-size:11px;color:#1a1a1a;line-height:1.7;">
+        차액 (안내문 − 엑셀): <strong style="color:${diff>=0?'#A32D2D':'#185FA5'};">${diff>=0?'+':''}${F(diff)}원</strong>
+        ${diff > 0 ? ' → 안내문이 더 많음 (엑셀 누락 가능성)' : diff < 0 ? ' → 엑셀이 더 많음 (안내문 누락 또는 중복 가능성)' : ''}<br>
+        원천징수세액 차액: <strong style="color:${diffWh>=0?'#A32D2D':'#185FA5'};">${diffWh>=0?'+':''}${F(diffWh)}원</strong>
+      </div>
+      ${!isMatch ? `<div style="margin-top:8px;padding:8px 10px;background:#FFF;border-left:3px solid ${statusColor};border-radius:4px;font-size:11px;line-height:1.6;color:#666;">
+        ⚠️ <strong>확인 사항:</strong><br>
+        · 동일 거래처에서 두 번 신고된 매출 없는지 확인<br>
+        · 안내문에 누락된 거래처 확인<br>
+        · 부가가치세 신고와 차이 발생 가능 (현금영수증·면세거래 등)<br>
+        · 사업장이 여러 개인 경우 거래처별 사업장 매칭 확인
+      </div>` : ''}
+    </div>`;
+  } else {
+    html += `<div style="padding:8px 10px;background:#F8F6F0;border-radius:4px;font-size:11px;color:#888;margin-bottom:10px;">
+      ℹ️ 안내문 수입금액이 입력되지 않아 비교 불가. 수입금액 입력 후 다시 검증하세요.
+    </div>`;
+  }
+  
+  // 3) 거래처별 상세 (접이식)
+  if(rows.length > 0){
+    html += `<details>
+      <summary style="cursor:pointer;font-size:12px;font-weight:600;color:#0C447C;padding:6px 0;">📋 거래처별 상세 (${rows.length}건) — 클릭하여 펼치기</summary>
+      <div style="margin-top:8px;overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;background:#FFF;border:1px solid #d8d4c4;">
+          <thead>
+            <tr style="background:#F0F7FF;">
+              <th style="padding:6px 8px;text-align:left;border:1px solid #d8d4c4;">#</th>
+              <th style="padding:6px 8px;text-align:left;border:1px solid #d8d4c4;">상호</th>
+              <th style="padding:6px 8px;text-align:left;border:1px solid #d8d4c4;">업종</th>
+              <th style="padding:6px 8px;text-align:right;border:1px solid #d8d4c4;">지급총액</th>
+              <th style="padding:6px 8px;text-align:right;border:1px solid #d8d4c4;">원천징수계</th>
+            </tr>
+          </thead>
+          <tbody>`;
+    rows.forEach((r, i) => {
+      html += `<tr>
+        <td style="padding:5px 8px;border:1px solid #e8e6df;color:#888;">${i+1}</td>
+        <td style="padding:5px 8px;border:1px solid #e8e6df;">${escapeHtml(r.name)}</td>
+        <td style="padding:5px 8px;border:1px solid #e8e6df;color:#888;">${escapeHtml(r.bizCode || '-')}</td>
+        <td style="padding:5px 8px;border:1px solid #e8e6df;text-align:right;font-weight:600;">${F(r.pay)}원</td>
+        <td style="padding:5px 8px;border:1px solid #e8e6df;text-align:right;color:#A32D2D;">${F(r.allTax)}원</td>
+      </tr>`;
+    });
+    html += `</tbody>
+          <tfoot>
+            <tr style="background:#FEF6E5;font-weight:700;">
+              <td colspan="3" style="padding:6px 8px;border:1px solid #D4A53D;">합계</td>
+              <td style="padding:6px 8px;text-align:right;border:1px solid #D4A53D;color:#A06900;">${F(totalPay)}원</td>
+              <td style="padding:6px 8px;text-align:right;border:1px solid #D4A53D;color:#A32D2D;">${F(totalAllTax)}원</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </details>`;
+  }
+  
+  content.innerHTML = html;
+  result.style.display = 'block';
+  
+  // ★ v52: 파싱 데이터 전역 저장 + 고객 카드 갱신
+  _whParsedData = {rows, totalPay, totalIncTax, totalLocTax, totalAllTax};
+  updateWhDisplay();
+  
+  // 결과 영역으로 스크롤
+  result.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function clearWhResult(){
+  const ta = document.getElementById('wh-paste');
+  const result = document.getElementById('wh-result');
+  if(ta) ta.value = '';
+  if(result) result.style.display = 'none';
+  // ★ v52: 고객 카드도 함께 비움
+  _whParsedData = null;
+  updateWhDisplay();
+}
+
+// ★ v52: 고객 전달용 카드에 거래처별 명세 표시
+function updateWhDisplay(){
+  const display = document.getElementById('customer-wh-display');
+  const content = document.getElementById('customer-wh-content');
+  if(!display || !content) return;
+  
+  if(!_whParsedData || _whParsedData.rows.length === 0){
+    display.style.display = 'none';
+    return;
+  }
+  
+  const {rows, totalPay, totalAllTax} = _whParsedData;
+  
+  let html = `<div style="font-size:11px;color:#666;margin-bottom:8px;line-height:1.6;">
+    ※ 아래 거래처별 명세가 고객님이 받으신 원천징수 자료와 일치하는지 <strong>확인 부탁드립니다</strong><br>
+    ※ 누락된 거래처가 있거나 금액이 다르면 즉시 알려주시기 바랍니다
+  </div>`;
+  
+  html += `<div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:11px;background:#FFF;border:1px solid #4A90D9;">
+      <thead>
+        <tr style="background:#F0F7FF;">
+          <th style="padding:6px 8px;text-align:center;border:1px solid #4A90D9;color:#0C447C;">#</th>
+          <th style="padding:6px 8px;text-align:left;border:1px solid #4A90D9;color:#0C447C;">상호</th>
+          <th style="padding:6px 8px;text-align:left;border:1px solid #4A90D9;color:#0C447C;">업종</th>
+          <th style="padding:6px 8px;text-align:right;border:1px solid #4A90D9;color:#0C447C;">지급총액</th>
+          <th style="padding:6px 8px;text-align:right;border:1px solid #4A90D9;color:#0C447C;">원천징수계</th>
+        </tr>
+      </thead>
+      <tbody>`;
+  rows.forEach((r, i) => {
+    html += `<tr>
+      <td style="padding:5px 8px;text-align:center;border:1px solid #d8d4c4;color:#888;">${i+1}</td>
+      <td style="padding:5px 8px;border:1px solid #d8d4c4;">${escapeHtml(r.name)}</td>
+      <td style="padding:5px 8px;border:1px solid #d8d4c4;color:#888;">${escapeHtml(r.bizCode || '-')}</td>
+      <td style="padding:5px 8px;border:1px solid #d8d4c4;text-align:right;font-weight:600;">${F(r.pay)}원</td>
+      <td style="padding:5px 8px;border:1px solid #d8d4c4;text-align:right;color:#A32D2D;">${F(r.allTax)}원</td>
+    </tr>`;
+  });
+  html += `</tbody>
+      <tfoot>
+        <tr style="background:#FEF6E5;font-weight:700;">
+          <td colspan="3" style="padding:6px 8px;text-align:center;border:1px solid #D4A53D;color:#A06900;">합계</td>
+          <td style="padding:6px 8px;text-align:right;border:1px solid #D4A53D;color:#A06900;">${F(totalPay)}원</td>
+          <td style="padding:6px 8px;text-align:right;border:1px solid #D4A53D;color:#A32D2D;">${F(totalAllTax)}원</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>`;
+  
+  content.innerHTML = html;
+  display.style.display = 'block';
 }
 
 // ===== PDF 파싱 =====

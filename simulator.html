@@ -238,7 +238,7 @@ input:focus,select:focus{outline:none;border-color:#185FA5;}
 <div class="container">
 <a class="back" href="index.html">← 인덱스로 돌아가기</a>
 <h1>🧮 종합소득세 신고대리 가결산 시뮬레이터</h1>
-<p class="sub">2025년 귀속 종합소득세 · 간편(기준)/간편(단순)/기장 3가지 비교 <span style="color:#185FA5;font-weight:600;">v57</span> <span style="font-size:11px;color:#888;">(첨부 직전 빈공간 제거)</span></p>
+<p class="sub">2025년 귀속 종합소득세 · 간편(기준)/간편(단순)/기장 3가지 비교 <span style="color:#185FA5;font-weight:600;">v58</span> <span style="font-size:11px;color:#888;">(소득금액 직접입력 정합성 확보)</span></p>
 
 <!-- 이름 입력 -->
 <!-- ========== 입력 영역 (PDF는 결과만 인쇄) ========== -->
@@ -3988,6 +3988,11 @@ function calc(){
   
   const totalRev = incomes.reduce((a,b)=>a+b.amt,0);
   const slr = N(document.getElementById('rsl').value)/100;
+  // ★ v58: 장부 입력 모드 — amount(소득금액 직접입력) 모드면 입력값 그대로 사용
+  //   (rate 모드는 슬라이더가 step="0.01"로 반올림되므로, 역산 시 1~2천원 오차 발생 →
+  //    세무사가 의도한 소득금액을 보존하기 위해 amount 모드는 입력값 우선 사용)
+  const bookInputMode = document.querySelector('input[name="book-input-mode"]:checked')?.value || 'rate';
+  const bookAmountInput = N(document.getElementById('book-amount')?.value);
   const otherType = document.getElementById('other-type').value;
 
   // ★ v29: 현재 확인 지출액 (사용자 입력, 기장 신고대리 카드에 표시)
@@ -4041,7 +4046,15 @@ function calc(){
     i1 = upperLimit;
     upperLimitApplied = true;
   }
-  const i3 = Math.round(totalRev*slr);
+  // ★ v58: 기장 신고대리 소득금액 — 모드별 분기
+  //   - amount 모드: 사용자가 입력한 소득금액 그대로 사용 (세무사 의도 보존, 표시·계산 일치)
+  //   - rate 모드: 수입금액 × 소득률 (기존 동작)
+  const i3 = (bookInputMode === 'amount' && bookAmountInput > 0)
+    ? bookAmountInput
+    : Math.round(totalRev*slr);
+  // ★ v58: 실제 적용된 소득률(표시용) — i3에서 역산해 표시도 계산과 일치시킴
+  //   rate 모드: 슬라이더 값 그대로 / amount 모드: i3 / totalRev 로 역산
+  const appliedRate = (totalRev > 0) ? (i3 / totalRev) : slr;
   
   // ★ v36: 고객 전달용 비교 — 기장 신고대리 (현재 확인 지출액 기준)
   //    실제 증빙·집계된 경비(curExp)로 산정. curExp > 0 일 때만 활성.
@@ -4098,7 +4111,7 @@ function calc(){
   const results = [
     {lbl:'간편 신고대리 (기준경비율)', sub: stdSubLabel, inc:i1, r:r1, disabled:false, warn: isDoubleEntry?`⚠️ 복식부기의무 → 기준경비율 ×1/2 적용 + 무신고/무기장가산세 비교 적용${upperLimitApplied?'<br>📊 소득상한배율 적용 (단순경비율 소득금액의 3.4배 한도)':''}`:(upperLimitApplied?'📊 소득상한배율 적용 (단순경비율 소득금액의 2.8배 한도)':'')},
     {lbl:'간편 신고대리 (단순경비율)', sub:`경비율 ${(avgSimpDisplay*100).toFixed(1)}%${isDoubleEntry?' · 가산세 적용':''}`, inc:i2, r:r2, disabled: !canUseSimpExpense, warn: !canUseSimpExpense ? `❌ 적용 불가 — ${simpDisableReason}` : (isDoubleEntry?'⚠️ 복식부기의무 → 무신고/무기장가산세 비교 적용':'')},
-    {lbl:'기장 신고대리', sub:`소득률 ${(slr*100).toFixed(2)}%${parsedData.prevIncomeRate?' · 직전 '+parsedData.prevIncomeRate+'%':''}`, inc:i3, r:r3, disabled:false, warn:''}
+    {lbl:'기장 신고대리', sub:`소득률 ${(appliedRate*100).toFixed(2)}%${parsedData.prevIncomeRate?' · 직전 '+parsedData.prevIncomeRate+'%':''}`, inc:i3, r:r3, disabled:false, warn:''}
   ];
   
   document.getElementById('cds').innerHTML = results.map(d=>{
@@ -4196,7 +4209,7 @@ function calc(){
       const addColor = addExp > 0 ? '#A32D2D' : '#3B6D11';
       const addSign  = addExp >= 0 ? '' : '-';
       const addNote  = addExp > 0
-        ? `<span style="font-size:10px;color:#888;">(${(slr*100).toFixed(0)}% 소득률 맞추려면 추가 필요)</span>`
+        ? `<span style="font-size:10px;color:#888;">(${(appliedRate*100).toFixed(0)}% 소득률 맞추려면 추가 필요)</span>`
         : (addExp < 0
             ? `<span style="font-size:10px;color:#3B6D11;">(이미 충분 · ${F(Math.abs(addExp))}원 초과)</span>`
             : `<span style="font-size:10px;color:#888;">(정확히 일치)</span>`);
@@ -4299,7 +4312,7 @@ function calc(){
   customerResults.push({
     type: 'book-rate',  // 기장(소득률 설정)
     lbl: '기장 신고대리',
-    sub: `소득률 ${(slr*100).toFixed(2)}% 적용`,
+    sub: `소득률 ${(appliedRate*100).toFixed(2)}% 적용`,
     badge: '장부신고',
     color: '#633806',
     total: totalPay3,
